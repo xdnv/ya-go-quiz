@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +20,34 @@ import (
 )
 
 var sc app.ServerConfig
+
+func handleGZIPRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+			next.ServeHTTP(rw, r)
+			return
+		}
+
+		logger.Info("srv-gzip: handling gzipped request")
+
+		gz, err := gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer gz.Close()
+		body, err := io.ReadAll(gz)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		next.ServeHTTP(rw, r)
+	})
+}
 
 func main() {
 	//sync internal/logger upon exit
@@ -69,11 +101,16 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 	mux := chi.NewRouter()
 	//mux.Use(middleware.Logger)
 	mux.Use(logger.LoggerMiddleware)
-	//mux.Use(handleGZIPRequests)
+	mux.Use(handleGZIPRequests)
 	//mux.Use(signer.HandleSignedRequests)
 	//mux.Use(middleware.Compress(5, sc.CompressibleContentTypes...))
 
 	mux.Get("/", index)
+	mux.Get("/admin", adminPage)
+	mux.Get("/quiz", quiz)
+	mux.Post("/upload", uploadData)
+	mux.Post("/command", handleCommand)
+	mux.Post("/submit", submit)
 	//mux.Get("/ping", pingDBServer)
 	//mux.Post("/value/", requestMetricV2)
 	//mux.Get("/value/{type}/{name}", requestMetricV1)
