@@ -43,7 +43,7 @@ func adminPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	data := PageData{
-		Title:       "Интерфейс администратора",
+		Title:       "Панель администратора",
 		TableHeader: "Доступные тесты:",
 		Columns: []string{
 			"Описание",

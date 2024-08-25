@@ -16,22 +16,11 @@
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav">
                 <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
-                <li class="nav-item"><a class="nav-link" href="/admin">Интерфейс администратора</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin">Панель администратора</a></li>
                 <li class="nav-item"><a class="nav-link" href="/logout">Выйти</a></li>
             </ul>
         </div>
     </nav>
-
-    <div class="container mt-5">
-        <h1>Загрузка файлов</h1>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="fileInput">Выберите файл:</label>
-                <input type="file" class="form-control" id="fileInput" name="file" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Загрузить тест</button>
-        </form>
-    </div>
 
     <div class="container mt-4">
         <h1>{{.Title}}</h1>
@@ -54,6 +43,17 @@
                 {{end}}
             </tbody>
         </table>
+    </div>
+
+    <div class="container mt-5">
+        <h2>Загрузка файлов</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="fileInput">Выберите файл:</label>
+                <input type="file" class="form-control" id="fileInput" name="file" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Загрузить тест</button>
+        </form>
     </div>
 
     <footer class="bg-light text-center mt-4 p-3">

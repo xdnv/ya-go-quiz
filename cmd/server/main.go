@@ -17,6 +17,7 @@ import (
 	"internal/app"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var sc app.ServerConfig
@@ -67,26 +68,18 @@ func main() {
 	wg.Add(1)
 	go server(ctx, &wg)
 
-	// if err := run(); err != nil {
-	// 	//logger.Error("Server error", zap.Error(err))
-	// 	log.Fatal(err)
-	// }
-
 	// listen for ^C
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
-	//fmt.Println("srv: received ^C - shutting down")
 	logger.Info("srv: received ^C - shutting down")
 
 	// tell the goroutines to stop
-	//fmt.Println("srv: telling goroutines to stop")
 	logger.Info("srv: telling goroutines to stop")
 	cancel()
 
 	// and wait for them to reply back
 	wg.Wait()
-	//fmt.Println("srv: shutdown")
 	logger.Info("srv: shutdown")
 }
 
@@ -103,13 +96,14 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 	mux.Use(logger.LoggerMiddleware)
 	mux.Use(handleGZIPRequests)
 	//mux.Use(signer.HandleSignedRequests)
-	//mux.Use(middleware.Compress(5, sc.CompressibleContentTypes...))
+	mux.Use(middleware.Compress(5, sc.CompressibleContentTypes...))
 
 	mux.Get("/", index)
 	mux.Get("/admin", adminPage)
 	mux.Get("/quiz", quiz)
-	mux.Get("/login", auth_page)
+	mux.Get("/login", authPage)
 	mux.Get("/logout", logout)
+	//mux.Get("/result/{id}", handleResult)
 	mux.Post("/login", auth)
 	mux.Post("/upload", uploadData)
 	mux.Post("/command", handleCommand)
@@ -127,14 +121,12 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		// service connections
 		if err := srv.ListenAndServe(); err != nil {
-			//fmt.Printf("Listen: %s\n", err)
 			logger.Error(fmt.Sprintf("Listen: %s\n", err))
 			//log.Fatal(err)
 		}
 	}()
 
 	<-ctx.Done()
-	//fmt.Println("srv: shutdown requested")
 	logger.Info("srv: shutdown requested")
 
 	// shut down gracefully with timeout of 5 seconds max
