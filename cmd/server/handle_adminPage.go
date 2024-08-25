@@ -33,6 +33,10 @@ func adminPage(w http.ResponseWriter, r *http.Request) {
 	// 	http.NotFound(w, r)
 	// 	return
 	// }
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

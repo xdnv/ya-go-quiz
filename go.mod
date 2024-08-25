@@ -6,6 +6,7 @@ require go.uber.org/zap v1.27.0 // indirect
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0
+	golang.org/x/crypto v0.17.0
 	internal/adapters/logger v1.0.0
 	internal/app v1.0.0
 )

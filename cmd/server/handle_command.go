@@ -30,6 +30,11 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	// Read body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
