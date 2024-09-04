@@ -4,35 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"internal/adapters/logger"
+	"internal/domain"
 	"text/template"
 
 	"net/http"
 )
 
-// // Page data storage
-// type PageData struct {
-// 	Title       string
-// 	TableHeader string
-// 	Columns     []string
-// 	Rows        []RowData
-// }
-
-// // Row description
-// type RowData struct {
-// 	Name  string
-// 	Value string
-// 	Link  string
-// }
-
-//const indexTableRowTpl = "<tr><td>%s</td><td style=\"text-align: right;\">%v</td></tr>"
-
 func adminPage(w http.ResponseWriter, r *http.Request) {
-	//check for malformed requests - only exact root path accepted
-	//Important: covered by tests, removal will bring tests to fail
-	// if r.URL.Path != "/" {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
+
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -40,26 +19,39 @@ func adminPage(w http.ResponseWriter, r *http.Request) {
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 
-	data := PageData{
+	qr, err := stor.GetQuizRows(true)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error getting quiz rows: %v\n", err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := domain.PageData{
 		Title:       "Панель администратора",
 		TableHeader: "Доступные тесты:",
 		Columns: []string{
+			"UUID",
+			"Идентификатор",
+			"Название",
 			"Описание",
+			"Активен",
 			"Тест",
+			"Управление",
 		},
-		Rows: []RowData{
-			{Name: "Тест 1", Value: "Отключить", Link: "#1"},
-			{Name: "Тест 2", Value: "Отключить", Link: "#2"},
-			{Name: "Тест 3", Value: "Отключить", Link: "#3"},
-		},
+		// Rows: []domain.QuizRowData{
+		// 	{Name: "Тест 1", Value: "Отключить", Link: "#1"},
+		// 	{Name: "Тест 2", Value: "Отключить", Link: "#2"},
+		// 	{Name: "Тест 3", Value: "Отключить", Link: "#3"},
+		// },
+		Rows: *qr,
 	}
 
 	//TODO: move it and cache it!
 	// Read template
 	tmpl, err := template.ParseFiles("templates\\admin.html")
-	logger.Info(fmt.Sprintf("ParseFiles => name is: %s %s\n", tmpl.Name(), tmpl.DefinedTemplates()))
+	logger.Info(fmt.Sprintf("ParseFiles => name is: %s %s", tmpl.Name(), tmpl.DefinedTemplates()))
 
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error loading template: %v\n", err))

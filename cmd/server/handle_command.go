@@ -7,28 +7,7 @@ import (
 	"net/http"
 )
 
-// // Page data storage
-// type PageData struct {
-// 	Title       string
-// 	TableHeader string
-// 	Columns     []string
-// 	Rows        []RowData
-// }
-
-// // Row description
-// type RowData struct {
-// 	Name  string
-// 	Value string
-// 	Link  string
-// }
-
 func handleCommand(w http.ResponseWriter, r *http.Request) {
-	//check for malformed requests - only exact root path accepted
-	//Important: covered by tests, removal will bring tests to fail
-	// if r.URL.Path != "/" {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
 
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

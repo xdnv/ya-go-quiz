@@ -15,12 +15,14 @@ import (
 
 	"internal/adapters/logger"
 	"internal/app"
+	"internal/ports/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 var sc app.ServerConfig
+var stor *storage.UniStorage
 
 func handleGZIPRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -64,6 +66,15 @@ func main() {
 	//Warning! do not run outside function, it will break tests due to flag.Parse()
 	sc = app.InitServerConfig()
 
+	stor = storage.NewUniStorage(&sc)
+	defer stor.Close()
+
+	//post-init unistorage actions
+	err := stor.Bootstrap()
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("srv: post-init bootstrap failed, error: %s\n", err))
+	}
+
 	// run `server` in it's own goroutine
 	wg.Add(1)
 	go server(ctx, &wg)
@@ -100,20 +111,14 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 
 	mux.Get("/", index)
 	mux.Get("/admin", adminPage)
-	mux.Get("/quiz", quiz)
+	mux.Get("/quiz/{id}", quiz)
 	mux.Get("/login", authPage)
 	mux.Get("/logout", logout)
-	//mux.Get("/result/{id}", handleResult)
+	mux.Get("/results/{id}", handleResults)
 	mux.Post("/login", auth)
 	mux.Post("/upload", uploadData)
 	mux.Post("/command", handleCommand)
 	mux.Post("/submit", submit)
-	//mux.Get("/ping", pingDBServer)
-	//mux.Post("/value/", requestMetricV2)
-	//mux.Get("/value/{type}/{name}", requestMetricV1)
-	//mux.Post("/update/", updateMetricV2)
-	//mux.Post("/update/{type}/{name}/{value}", updateMetricV1)
-	//mux.Post("/updates/", updateMetrics)
 
 	// create a server
 	srv := &http.Server{Addr: sc.Endpoint, Handler: mux}

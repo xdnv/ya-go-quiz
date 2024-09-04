@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"internal/adapters/logger"
 	"net/http"
 	"strings"
 	"sync"
@@ -33,12 +31,13 @@ func hashPassword(password string) (string, error) {
 // Compare password with hashed one
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	logger.Error(fmt.Sprintf("pwd compare error: %v\n", err))
+	//logger.Error(fmt.Sprintf("pwd compare error: %v\n", err)) //DEBUG
 	return err == nil
 }
 
 // Get client IP-address
 func getClientIP(r *http.Request) string {
+	//TODO: strip port from return value
 	// check X-Forwarded-For header if we sit behing proxy/balancer
 	ip := r.Header.Get("X-Forwarded-For")
 	if ip != "" {

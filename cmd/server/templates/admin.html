@@ -36,8 +36,12 @@
             <tbody>
                 {{range .Rows}}
                 <tr>
+                    <td>{{.UUID}}</td>
+                    <td>{{.ID}}</td>
                     <td>{{.Name}}</td>
-                    <td><a href="{{.Link}}" />{{.Value}}</td>
+                    <td>{{.Description}}</td>
+                    <td>{{.IsActive}}</td>
+                    <td><a href="{{.Link}}" />Ссылка</td>
                     <td><button id="commandButton" class="btn btn-success mt-3">Отключить</button></td>
                 </tr>
                 {{end}}
@@ -84,8 +88,16 @@
                         alert('Файл успешно загружен!');
                         location.reload();
                     },
-                    error: function () {
-                        alert('Ошибка при загрузке файла.');
+                    error: function (xhr, status, error) {
+                        var errorMessage = 'Ошибка при загрузке файла';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            // JSON error message
+                            errorMessage = errorMessage + ': ' + xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            // text error message
+                            errorMessage = errorMessage + ': ' + xhr.responseText;
+                        }
+                        alert(errorMessage);
                     }
                 });
             });
@@ -97,8 +109,16 @@
                     success: function (response) {
                         alert('Команда успешно выполнена!');
                     },
-                    error: function () {
-                        alert('Ошибка при выполнении команды.');
+                    error: function (xhr, status, error) {
+                        var errorMessage = 'Ошибка при выполнении команды';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            // JSON error message
+                            errorMessage = errorMessage + ': ' + xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            // text error message
+                            errorMessage = errorMessage + ': ' + xhr.responseText;
+                        }
+                        alert(errorMessage);
                     }
                 });
             });

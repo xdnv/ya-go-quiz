@@ -6,21 +6,6 @@ import (
 	"net/http"
 )
 
-// // Page data storage
-// type PageData struct {
-// 	Title       string
-// 	TableHeader string
-// 	Columns     []string
-// 	Rows        []RowData
-// }
-
-// // Row description
-// type RowData struct {
-// 	Name  string
-// 	Value string
-// 	Link  string
-// }
-
 func submit(w http.ResponseWriter, r *http.Request) {
 	//check for malformed requests - only exact root path accepted
 	//Important: covered by tests, removal will bring tests to fail
@@ -36,7 +21,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 			logger.Info(fmt.Sprintf(" --> Values: [%v][%v]\n", key, value))
 		}
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/results/1", http.StatusSeeOther)
 
 	// // Read body
 	// body, err := io.ReadAll(r.Body)

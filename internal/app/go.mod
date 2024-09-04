@@ -20,4 +20,3 @@ require (
 )
 
 replace internal/adapters/logger => ../adapters/logger
-

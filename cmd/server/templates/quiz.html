@@ -63,21 +63,21 @@
                 {{if eq .Type "single_choice"}}
                 {{range .Options}}
                 <label>
-                    <input type="radio" name="{{$.Title}}-{{index 0}}" value="{{.Value}}">
+                    <input type="radio" name="{{$.Title}}-{{index 0}}" value="{{.ID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}
                 {{else if eq .Type "multiple_choice"}}
                 {{range .Options}}
                 <label>
-                    <input type="checkbox" name="{{$.Title}}-{{index 0}}[]" value="{{.Value}}">
+                    <input type="checkbox" name="{{$.Title}}-{{index 0}}[]" value="{{.ID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}
                 {{else if eq .Type "entry_int"}}
                 {{range .Options}}
                 <label>
-                    <input type="number" name="{{$.Title}}-{{index 0}}[]" value="{{.Value}}">
+                    <input type="number" name="{{$.Title}}-{{index 0}}[]" value="{{.ID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}
