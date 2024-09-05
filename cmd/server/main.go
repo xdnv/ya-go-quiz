@@ -117,7 +117,7 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 	mux.Get("/results/{id}", handleResults)
 	mux.Post("/login", auth)
 	mux.Post("/upload", uploadData)
-	mux.Post("/command", handleCommand)
+	mux.Post("/command/{command}/{id}", handleCommand)
 	mux.Post("/submit", submit)
 
 	// create a server

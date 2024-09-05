@@ -21,6 +21,7 @@ type QuizRowData struct {
 	Type        string `db:"type" json:"type"`               // Json datatype tag
 	ID          string `db:"id" json:"id"`                   // Unique quiz ID
 	UUID        string `db:"uuid" json:"uuid,omitempty"`     // Unique quiz UID (to store extracted from database)
+	WebID       string `db:"web_id" json:"web_id"`           // Unique quiz ID
 	Name        string `db:"name" json:"name"`               // Quiz name
 	Description string `db:"description" json:"description"` // Quiz description
 	Version     string `db:"version" json:"version"`         // Quiz version

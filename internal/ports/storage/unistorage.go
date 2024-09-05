@@ -62,6 +62,10 @@ func (t UniStorage) Close() {
 	//}
 }
 
+func (t UniStorage) ToggleQuizAvailability(uuid string) error {
+	return t.db.ToggleQuizAvailability(t.ctx, uuid)
+}
+
 func (t UniStorage) Ping() error {
 	// if t.config.StorageMode == app.Database {
 	dbctx, cancel := context.WithTimeout(t.ctx, t.timeout)

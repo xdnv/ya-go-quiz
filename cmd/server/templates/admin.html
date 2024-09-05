@@ -42,7 +42,7 @@
                     <td>{{.Description}}</td>
                     <td>{{.IsActive}}</td>
                     <td><a href="{{.Link}}" />Ссылка</td>
-                    <td><button id="commandButton" class="btn btn-success mt-3">Отключить</button></td>
+                    <td><button id="commandButton"  data-id="{{.WebID}}" class="btn btn-success mt-3">Переключить</button></td>
                 </tr>
                 {{end}}
             </tbody>
@@ -103,11 +103,14 @@
             });
 
             $('#commandButton').on('click', function () {
+                var itemId = $(this).data('id');
+
                 $.ajax({
-                    url: '/command', // URL to send command
+                    url: '/command/toggle/' + itemId, // URL to send command
                     type: 'POST',
                     success: function (response) {
-                        alert('Команда успешно выполнена!');
+                        //alert('Команда успешно выполнена!');
+                        location.reload();
                     },
                     error: function (xhr, status, error) {
                         var errorMessage = 'Ошибка при выполнении команды';

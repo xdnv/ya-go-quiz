@@ -463,9 +463,9 @@ func (t DbStorage) GetQuizRows(ctx context.Context, admin bool) (*[]domain.QuizR
 	var qd []domain.QuizRowData
 
 	query := `
-	SELECT id, ext_id, "version", is_active, "type", "name", description
-	FROM public.tests
-	WHERE is_active OR @adminMode;
+		SELECT id, ext_id, "version", is_active, "type", "name", description
+		FROM public.tests
+		WHERE is_active OR @adminMode;
 	`
 
 	rows, err := t.conn.QueryContext(ctx, query,
@@ -487,10 +487,12 @@ func (t DbStorage) GetQuizRows(ctx context.Context, admin bool) (*[]domain.QuizR
 			return nil, err
 		}
 
-		uuid_enc := domain.EncodeGUID(qr.UUID)
-		uuid_dec, _ := domain.DecodeGUID(uuid_enc)
-		logger.Info(uuid_dec + "\n")
+		//DEBUG
+		//uuid_enc := domain.EncodeGUID(qr.UUID)
+		//uuid_dec, _ := domain.DecodeGUID(uuid_enc)
+		//logger.Info(uuid_dec + "\n")
 
+		qr.WebID = domain.EncodeGUID(qr.UUID)
 		qr.Link = "/quiz/" + domain.EncodeGUID(qr.UUID)
 
 		qd = append(qd, *qr)
@@ -499,6 +501,35 @@ func (t DbStorage) GetQuizRows(ctx context.Context, admin bool) (*[]domain.QuizR
 	//logger.Info(fmt.Sprintf("GetQuizRows: got rows %s", len(qd))) //DEBUG
 
 	return &qd, nil
+}
+
+func (t DbStorage) ToggleQuizAvailability(ctx context.Context, uuid string) error {
+
+	// begin transaction
+	tx, err := t.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `
+		UPDATE public.tests
+		SET is_active = NOT is_active
+		WHERE id = @id;
+	`
+
+	_, err = tx.ExecContext(ctx, query,
+		pgx.NamedArgs{
+			"id": uuid,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// commit transaction
+	err = tx.Commit()
+	return err
 }
 
 // // Get a copy of Metric storage

@@ -28,7 +28,7 @@ func quiz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if uuid == "" {
-		logger.Error(fmt.Sprintf("Wrong Quiz ID [%s]: %s\n", url, err.Error()))
+		logger.Error(fmt.Sprintf("Malformed Quiz ID [%s]\n", url))
 		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
 		return
 	}

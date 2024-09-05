@@ -40,11 +40,6 @@ func adminPage(w http.ResponseWriter, r *http.Request) {
 			"Тест",
 			"Управление",
 		},
-		// Rows: []domain.QuizRowData{
-		// 	{Name: "Тест 1", Value: "Отключить", Link: "#1"},
-		// 	{Name: "Тест 2", Value: "Отключить", Link: "#2"},
-		// 	{Name: "Тест 3", Value: "Отключить", Link: "#3"},
-		// },
 		Rows: *qr,
 	}
 
