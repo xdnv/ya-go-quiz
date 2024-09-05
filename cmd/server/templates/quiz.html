@@ -67,21 +67,21 @@
                 {{if eq $q.Type "single_choice"}}
                 {{range $q.Options}}
                 <label>
-                    <input type="radio" name="{{$q.UUID}}" value="{{.ID}}">
+                    <input type="radio" name="{{$q.UUID}}" value="{{.UUID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}
                 {{else if eq $q.Type "multiple_choice"}}
                 {{range $q.Options}}
                 <label>
-                    <input type="checkbox" name="{{$q.UUID}}" value="{{.ID}}">
+                    <input type="checkbox" name="{{$q.UUID}}" value="{{.UUID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}
                 {{else if eq $q.Type "entry_int"}}
                 {{range $q.Options}}
                 <label>
-                    <input type="number" name="{{$q.UUID}}" value="{{.ID}}">
+                    <input type="number" name="{{$q.UUID}}" value="{{.UUID}}">
                     {{.Text}}
                 </label><br>
                 {{end}}

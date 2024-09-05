@@ -187,8 +187,8 @@ func (t DbStorage) Bootstrap(ctx context.Context) error {
 			id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
 			test_id UUID NOT NULL,
 			ext_id VARCHAR(50) NOT NULL,
-			min_precent INT NOT NULL,
-			max_precent INT NOT NULL,
+			min_percent INT NOT NULL,
+			max_percent INT NOT NULL,
 			score INT NOT NULL,
 			pass BOOL NOT NULL,
 			comment VARCHAR(150),
@@ -449,12 +449,12 @@ func (t DbStorage) UpdateQuizQuestionsT(ctx context.Context, tx *sql.Tx, qd *dom
 func (t DbStorage) UpdateQuizScoresT(ctx context.Context, tx *sql.Tx, qd *domain.QuizData, errs *[]error) {
 
 	query := `
-		INSERT INTO public.scores (test_id, ext_id, min_precent, max_precent, score, pass, comment)
-			VALUES (@test_id, @ext_id, @min_precent, @max_precent, @score, @pass, @comment)
+		INSERT INTO public.scores (test_id, ext_id, min_percent, max_percent, score, pass, comment)
+			VALUES (@test_id, @ext_id, @min_percent, @max_percent, @score, @pass, @comment)
 		ON CONFLICT ON CONSTRAINT score_uniq_test DO UPDATE
 			SET
-				min_precent = EXCLUDED.min_precent,
-				max_precent = EXCLUDED.max_precent,
+				min_percent = EXCLUDED.min_percent,
+				max_percent = EXCLUDED.max_percent,
 				score = EXCLUDED.score,
 				pass = EXCLUDED.pass,
 				comment = EXCLUDED.comment
@@ -469,8 +469,8 @@ func (t DbStorage) UpdateQuizScoresT(ctx context.Context, tx *sql.Tx, qd *domain
 			pgx.NamedArgs{
 				"test_id":     qd.UUID,
 				"ext_id":      s.ID,
-				"min_precent": s.MinPrecent,
-				"max_precent": s.MaxPrecent,
+				"min_percent": s.MinPercent,
+				"max_percent": s.MaxPercent,
 				"score":       s.Score,
 				"pass":        s.Pass,
 				"comment":     s.Comment,
@@ -647,6 +647,49 @@ func (t DbStorage) GetQuizData(ctx context.Context, uuid string) (*domain.QuizDa
 	//logger.Info(fmt.Sprintf("GetQuizData: got quiz %s", qd)) //DEBUG
 
 	return &qd, nil
+}
+
+func (t DbStorage) GetQuizScores(ctx context.Context, uuid string) (*[]domain.QuizScore, error) {
+
+	var qs []domain.QuizScore
+
+	query := `
+		SELECT
+			s.id AS id,
+			s.ext_id AS ext_id,
+			s.min_percent AS min_percent,
+			s.max_percent AS max_percent,
+			s.score AS score,
+			s.pass AS pass,
+			s.comment AS comment
+		FROM public.scores s
+		WHERE s.test_id = @id
+		GROUP BY s.id
+		ORDER BY s.ext_id;
+	`
+
+	rows, err := t.conn.QueryContext(ctx, query,
+		pgx.NamedArgs{
+			"id": uuid,
+		},
+	)
+	if err != nil {
+		logger.Error(fmt.Sprintf("GetQuizScores: %s", err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		qr := new(domain.QuizScore)
+		if err := rows.Scan(&qr.UUID, &qr.ID, &qr.MinPercent, &qr.MaxPercent, &qr.Score, &qr.Pass, &qr.Comment); err != nil {
+			logger.Error(fmt.Sprintf("GetQuizScores: %s", err))
+			return nil, err
+		}
+
+		qs = append(qs, *qr)
+	}
+
+	return &qs, nil
 }
 
 func (t DbStorage) ToggleQuizAvailability(ctx context.Context, uuid string) error {

@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // Quiz data structure to store, extract serialize actual tests
 type QuizData struct {
 	Type        string         `db:"type" json:"type"`                     // Json datatype tag
@@ -39,8 +41,8 @@ type QuizOption struct {
 type QuizScore struct {
 	ID         string `db:"id" json:"id"`                     // Unique score ID
 	UUID       string `db:"uuid" json:"uuid,omitempty"`       // Unique score UID (to store extracted from database)
-	MinPrecent int    `db:"min_percent" json:"min_percent"`   // Min percent of replies to hold this score
-	MaxPrecent int    `db:"max_percent" json:"max_percent"`   // Max percent of replies to hold this score
+	MinPercent int    `db:"min_percent" json:"min_percent"`   // Min percent of replies to hold this score
+	MaxPercent int    `db:"max_percent" json:"max_percent"`   // Max percent of replies to hold this score
 	Score      int    `db:"score" json:"score"`               // Score to be set
 	Pass       bool   `db:"pass" json:"pass"`                 // Quiz pass mark
 	Comment    string `db:"comment" json:"comment,omitempty"` // Score comment (i.e. floating help)
@@ -48,12 +50,14 @@ type QuizScore struct {
 
 //Quiz results
 type QuizResults struct {
-	ID       string `db:"id" json:"id"`               // Unique result ID
-	TestID   string `db:"test_id" json:"test_id"`     // Test ID
-	ScoreID  string `db:"score_id" json:"score_id"`   // Score ID
-	PassTime string `db:"pass_time" json:"pass_time"` // Timestamp
-	Result   int    `db:"result" json:"result"`
-	Score    int    `db:"score" json:"score"`
-	IsPassed bool   `db:"is_passed" json:"is_passed"`
-	Replies  string `db:"replies" json:"replies"` // Replies as JSON string
+	ID       string    `db:"id" json:"id"`               // Unique result ID
+	TestID   string    `db:"test_id" json:"test_id"`     // Test ID
+	ScoreID  string    `db:"score_id" json:"score_id"`   // Score ID
+	PassTime time.Time `db:"pass_time" json:"pass_time"` // Timestamp
+	Result   int       `db:"result" json:"result"`
+	Score    int       `db:"score" json:"score"`
+	IsPassed bool      `db:"is_passed" json:"is_passed"`
+	Replies  string    `db:"replies" json:"replies"` // Replies as JSON string
 }
+
+type QuizReplies map[string][]string
