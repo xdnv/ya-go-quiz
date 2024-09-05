@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"internal/adapters/logger"
 	"internal/domain"
@@ -189,6 +190,7 @@ func (t DbStorage) Bootstrap(ctx context.Context) error {
 			min_precent INT NOT NULL,
 			max_precent INT NOT NULL,
 			score INT NOT NULL,
+			pass BOOL NOT NULL,
 			comment VARCHAR(150),
 			CONSTRAINT score_fk_test FOREIGN KEY (test_id) REFERENCES public.tests(id),
 			CONSTRAINT score_uniq_test UNIQUE (ext_id, test_id)
@@ -378,9 +380,7 @@ func (t DbStorage) UpdateQuizHeaderT(ctx context.Context, tx *sql.Tx, qd *domain
 	return testID, err
 }
 
-func (t DbStorage) UpdateQuizQuestionsT(ctx context.Context, tx *sql.Tx, qd *domain.QuizData, errs *[]error) error {
-
-	var err error = nil
+func (t DbStorage) UpdateQuizQuestionsT(ctx context.Context, tx *sql.Tx, qd *domain.QuizData, errs *[]error) {
 
 	query_question := `
 		INSERT INTO public.questions (test_id, ext_id, type, text, comment)
@@ -392,17 +392,28 @@ func (t DbStorage) UpdateQuizQuestionsT(ctx context.Context, tx *sql.Tx, qd *dom
 		RETURNING id;
 	`
 
+	query_option := `
+		INSERT INTO public.options (question_id, ext_id, text, value, is_correct)
+			VALUES (@question_id, @ext_id, @text, @value, @is_correct)
+		ON CONFLICT ON CONSTRAINT option_uniq_question DO UPDATE
+			SET
+				text = EXCLUDED.text,
+				value = EXCLUDED.value,
+				is_correct = EXCLUDED.is_correct
+		RETURNING id;
+	`
+
 	//process questions + options
-	for _, v := range qd.Data {
+	for _, q := range qd.Questions {
 		var questionID string
 
 		err := tx.QueryRowContext(ctx, query_question,
 			pgx.NamedArgs{
 				"test_id": qd.UUID,
-				"ext_id":  v.ID,
-				"type":    v.Type,
-				"text":    v.Text,
-				"comment": v.Comment,
+				"ext_id":  q.ID,
+				"type":    q.Type,
+				"text":    q.Text,
+				"comment": q.Comment,
 			},
 		).Scan(&questionID)
 
@@ -410,10 +421,68 @@ func (t DbStorage) UpdateQuizQuestionsT(ctx context.Context, tx *sql.Tx, qd *dom
 			*errs = append(*errs, err)
 			continue
 		}
-		v.UUID = questionID
+		q.UUID = questionID
+
+		for _, o := range q.Options {
+			var optionID string
+
+			err := tx.QueryRowContext(ctx, query_option,
+				pgx.NamedArgs{
+					"question_id": q.UUID,
+					"ext_id":      o.ID,
+					"text":        o.Text,
+					"value":       o.Value,
+					"is_correct":  o.IsCorrect,
+				},
+			).Scan(&optionID)
+
+			if err != nil {
+				*errs = append(*errs, err)
+				continue
+			}
+			o.UUID = optionID
+		}
 	}
 
-	return err
+}
+
+func (t DbStorage) UpdateQuizScoresT(ctx context.Context, tx *sql.Tx, qd *domain.QuizData, errs *[]error) {
+
+	query := `
+		INSERT INTO public.scores (test_id, ext_id, min_precent, max_precent, score, pass, comment)
+			VALUES (@test_id, @ext_id, @min_precent, @max_precent, @score, @pass, @comment)
+		ON CONFLICT ON CONSTRAINT score_uniq_test DO UPDATE
+			SET
+				min_precent = EXCLUDED.min_precent,
+				max_precent = EXCLUDED.max_precent,
+				score = EXCLUDED.score,
+				pass = EXCLUDED.pass,
+				comment = EXCLUDED.comment
+		RETURNING id;
+	`
+
+	//process scores
+	for _, s := range qd.Scores {
+		var scoreID string
+
+		err := tx.QueryRowContext(ctx, query,
+			pgx.NamedArgs{
+				"test_id":     qd.UUID,
+				"ext_id":      s.ID,
+				"min_precent": s.MinPrecent,
+				"max_precent": s.MaxPrecent,
+				"score":       s.Score,
+				"pass":        s.Pass,
+				"comment":     s.Comment,
+			},
+		).Scan(&scoreID)
+
+		if err != nil {
+			*errs = append(*errs, err)
+			continue
+		}
+		s.UUID = scoreID
+	}
 }
 
 func (t DbStorage) UpdateQuiz(ctx context.Context, qd *domain.QuizData, errs *[]error) error {
@@ -432,14 +501,14 @@ func (t DbStorage) UpdateQuiz(ctx context.Context, qd *domain.QuizData, errs *[]
 	testID, err = t.UpdateQuizHeaderT(ctx, tx, qd)
 	if err != nil {
 		*errs = append(*errs, err)
-		// cannot continue since header has insertion errors
+		// should not continue since header has insertion errors
 		return err
 	}
 
 	qd.UUID = testID
 
 	//process questions + options
-	err = t.UpdateQuizQuestionsT(ctx, tx, qd, errs)
+	t.UpdateQuizQuestionsT(ctx, tx, qd, errs)
 	// if err != nil {
 	// 	*errs = append( err)
 	// }
@@ -447,7 +516,7 @@ func (t DbStorage) UpdateQuiz(ctx context.Context, qd *domain.QuizData, errs *[]
 	//process scores
 	// for _, v := range qd.Scores {
 
-	// 	err = t.UpdateQuizScoresT(ctx, tx, qd)
+	t.UpdateQuizScoresT(ctx, tx, qd, errs)
 	// 	if err != nil {
 	// 		*errs = append(*errs, err)
 	// 	}
@@ -499,6 +568,83 @@ func (t DbStorage) GetQuizRows(ctx context.Context, admin bool) (*[]domain.QuizR
 	}
 
 	//logger.Info(fmt.Sprintf("GetQuizRows: got rows %s", len(qd))) //DEBUG
+
+	return &qd, nil
+}
+
+func (t DbStorage) GetQuizData(ctx context.Context, uuid string) (*domain.QuizData, error) {
+
+	var qd domain.QuizData
+	var questionsJSON string
+
+	query := `
+	WITH question_data AS (
+		select
+			q.id AS id,
+			q.ext_id AS ext_id,
+			q.test_id AS test_id,
+			q.text AS text,
+			q."type" AS "type",
+			JSON_AGG(
+				JSON_BUILD_OBJECT(
+					'uuid', o.id,
+					'id', o.ext_id,
+					'text', o.text,
+					'value', o.value,
+					'is_correct', o.is_correct
+				) ORDER BY o.ext_id ASC
+			) AS options
+		FROM public.questions q
+		LEFT JOIN public.options o ON o.question_id = q.id
+		GROUP BY q.id
+	)
+	select
+		t.id,
+		t.ext_id,
+		t."version",
+		t.is_active,
+		t."type",
+		t."name",
+		t.description,
+		COALESCE(
+			JSON_AGG(
+				JSON_BUILD_OBJECT(
+					'uuid', q.id,
+					'id', q.ext_id,
+					'type', q.type,
+					'text', q.text,
+					'options', q.options
+				) ORDER BY q.ext_id ASC
+			),
+			'[]'
+		) AS questions
+	FROM public.tests t
+	LEFT JOIN question_data q ON q.test_id = t.id
+	WHERE t.id = @id
+	GROUP BY t.id, t.ext_id, t."version", t.is_active, t."type", t."name", t.description;
+	`
+
+	err := t.conn.QueryRowContext(ctx, query,
+		pgx.NamedArgs{
+			"id": uuid,
+		},
+	).Scan(&qd.UUID, &qd.ID, &qd.Version, &qd.IsActive, &qd.Type, &qd.Name, &qd.Description, &questionsJSON)
+
+	if err != nil {
+		logger.Error(fmt.Sprintf("GetQuizData: %s", err))
+		return nil, err
+	}
+
+	if err := json.Unmarshal([]byte(questionsJSON), &qd.Questions); err != nil {
+		logger.Error(fmt.Sprintf("GetQuizData: %s", err))
+		return nil, err
+	}
+
+	// for i := range qd.Questions {
+	// 	logger.Info(fmt.Sprintf("GetQuizData: got option %v", qd.Questions[i].Options)) //DEBUG
+	// }
+
+	//logger.Info(fmt.Sprintf("GetQuizData: got quiz %s", qd)) //DEBUG
 
 	return &qd, nil
 }

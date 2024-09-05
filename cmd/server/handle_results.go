@@ -30,6 +30,8 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	//({{ if .IsCorrect }}Верно{{ else }}Неверно{{ end }})
+
 	//TODO: move it and cache it!
 	// Read template
 	tmpl, err := template.ParseFiles("templates\\results.html")

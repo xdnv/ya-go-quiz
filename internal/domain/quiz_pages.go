@@ -2,7 +2,8 @@ package domain
 
 // Page data structure
 type QuizPageData struct {
-	Code        string
+	ID          string
+	UUID        string
 	Title       string
 	Description string
 	Questions   []QuizQuestion

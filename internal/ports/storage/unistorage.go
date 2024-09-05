@@ -128,6 +128,26 @@ func (t UniStorage) GetQuizRows(admin bool) (*[]domain.QuizRowData, error) {
 	return qd, err
 }
 
+func (t UniStorage) GetQuizData(uuid string) (*domain.QuizData, error) {
+
+	dbctx, cancel := context.WithTimeout(t.ctx, t.timeout)
+	defer cancel()
+	var qd *domain.QuizData
+
+	errMsg := "UniStorage.GetQuizData error"
+	backoff := func(ctx context.Context) error {
+		var err error
+		qd, err = t.db.GetQuizData(dbctx, uuid)
+		return app.HandleRetriableDB(err, errMsg)
+	}
+	err := app.DoRetry(dbctx, t.config.MaxConnectionRetries, backoff)
+	if err != nil {
+		logger.Error(fmt.Sprintf("%s: %s\n", errMsg, err))
+		return nil, err
+	}
+	return qd, err
+}
+
 // // Get a copy of Metric storage
 // func (t UniStorage) GetMetrics() map[string]Metric {
 

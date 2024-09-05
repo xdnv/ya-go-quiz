@@ -8,6 +8,7 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.5.5
 	internal/adapters/logger v1.0.0
+	internal/domain v1.0.0
 )
 
 require (
@@ -20,3 +21,4 @@ require (
 )
 
 replace internal/adapters/logger => ../adapters/logger
+replace internal/domain => ../domain
