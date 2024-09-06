@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"internal/app"
+	"internal/domain"
 	"internal/ports/storage"
 	"io"
 	"net/http"
@@ -90,8 +92,7 @@ func Test_index(t *testing.T) {
 
 	// create db mock with custom pgxNamedArgs converter
 	converter := PgxCustomConverter{}
-	db, mock, err := sqlmock.New(sqlmock.ValueConverterOption(converter))
-
+	db, mock, err := sqlmock.New(sqlmock.ValueConverterOption(converter), sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
 		t.Fatalf("error opening sqlmock: '%s'", err)
 	}
@@ -118,6 +119,158 @@ func Test_index(t *testing.T) {
 			w := httptest.NewRecorder()
 			index(w, request)
 
+			result := w.Result()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+
+			_, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
+
+			//bodyString := string(bodyBytes)
+			//assert.True(t, strings.Contains(bodyString, tt.want.bodyHeader))
+		})
+	}
+}
+
+func Test_quiz(t *testing.T) {
+	type want struct {
+		contentType string
+		statusCode  int
+		bodyHeader  string
+	}
+	tests := []struct {
+		name      string
+		request   string
+		parameter string
+		method    string
+		want      want
+	}{
+		{
+			name: "001 positive quiz test",
+			want: want{
+				contentType: "text/html; charset=utf-8",
+				statusCode:  200,
+				bodyHeader:  "<html>",
+			},
+			request:   "/quiz/{id}",
+			parameter: "qMp_rJ4dH97-mx9jdsmFkvP",
+			method:    http.MethodGet,
+		},
+		{
+			name: "002 negative quiz test",
+			want: want{
+				contentType: "text/plain; charset=utf-8",
+				statusCode:  http.StatusNotFound,
+				bodyHeader:  "",
+			},
+			request:   "/quiz/{id}",
+			parameter: "56789",
+			method:    http.MethodGet,
+		},
+	}
+
+	// create db mock with custom pgxNamedArgs converter
+	converter := PgxCustomConverter{}
+	db, mock, err := sqlmock.New(sqlmock.ValueConverterOption(converter), sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("error opening sqlmock: '%s'", err)
+	}
+	defer db.Close()
+
+	//switch sever config to mock mode
+	testSc := NewTestServerConfig(db, &mock)
+	stor = storage.NewUniStorage(testSc)
+
+	//uuid := uuid.New()
+
+	var arr []domain.QuizQuestion
+	var qq domain.QuizQuestion
+	arr = append(arr, qq)
+
+	arrJSON, err := json.Marshal(arr)
+
+	// Expect query
+	mock.ExpectQuery(`
+	WITH question_data AS (
+		select
+			q.id AS id,
+			q.ext_id AS ext_id,
+			q.test_id AS test_id,
+			q.text AS text,
+			q."type" AS "type",
+			JSON_AGG(
+				JSON_BUILD_OBJECT(
+					'uuid', o.id,
+					'id', o.ext_id,
+					'text', o.text,
+					'value', o.value,
+					'is_correct', o.is_correct
+				) ORDER BY o.ext_id ASC
+			) AS options
+		FROM public.questions q
+		LEFT JOIN public.options o ON o.question_id = q.id
+		GROUP BY q.id
+	)
+	select
+		t.id,
+		t.ext_id,
+		t."version",
+		t.is_active,
+		t."type",
+		t."name",
+		t.description,
+		COALESCE(
+			JSON_AGG(
+				JSON_BUILD_OBJECT(
+					'uuid', q.id,
+					'id', q.ext_id,
+					'type', q.type,
+					'text', q.text,
+					'options', q.options
+				) ORDER BY q.ext_id ASC
+			),
+			'[]'
+		) AS questions
+	FROM public.tests t
+	LEFT JOIN question_data q ON q.test_id = t.id
+	WHERE t.id = @id
+	GROUP BY t.id, t.ext_id, t."version", t.is_active, t."type", t."name", t.description;
+	`).
+		WithArgs(sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id",
+			"ext_id",
+			"version",
+			"is_active",
+			"type",
+			"name",
+			"description",
+			"questions"}).
+			AddRow(
+				"123e4567-e89b-12d3-a456-426655440000",
+				"TST_001",
+				"20240901",
+				true,
+				"go-quiz-test",
+				"Test #1",
+				"Demo-test to check for page operation",
+				arrJSON))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(tt.method, tt.request, nil)
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tt.parameter)
+
+			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+			quiz(w, r)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
