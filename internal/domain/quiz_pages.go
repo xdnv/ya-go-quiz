@@ -9,6 +9,15 @@ type QuizPageData struct {
 	Questions   []QuizQuestion
 }
 
+type QuizResultPageData struct {
+	ID          string
+	UUID        string
+	Title       string
+	Description string
+	Link        string
+	Result      QuizResult
+}
+
 // Page data storage
 type PageData struct {
 	Title       string

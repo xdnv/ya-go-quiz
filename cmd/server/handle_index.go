@@ -12,7 +12,6 @@ import (
 
 func index(w http.ResponseWriter, r *http.Request) {
 	//check for malformed requests - only exact root path accepted
-	//Important: covered by tests, removal will bring tests to fail
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -37,11 +36,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 			"Описание",
 			"Тест",
 		},
-		// Rows: []domain.RowData{
-		// 	{Name: "Тест 1", Value: "Пройти тест", Link: "#1"},
-		// 	{Name: "Тест 2", Value: "Пройти тест", Link: "#2"},
-		// 	{Name: "Тест 3", Value: "Пройти тест", Link: "#3"},
-		// },
 		Rows: *qr,
 	}
 

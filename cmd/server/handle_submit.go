@@ -28,14 +28,6 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//DEBUG
-	for key, values := range *qrp {
-		logger.Info(fmt.Sprintf("TEST: %v\n", key))
-		for _, value := range values {
-			logger.Info(fmt.Sprintf(" --> Values: [%v][%v]\n", key, value))
-		}
-	}
-
 	uuid := r.Form.Get("test_id")
 	if uuid == "" {
 		logger.Error(fmt.Sprintf("Submit: Wrong test ID [%s]\n", uuid))
@@ -58,6 +50,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 	qd.Scores = append(qd.Scores, *qst...)
 
+	//TODO: move more of quiz logic to app
 	totalCorrrect := app.GetQuizTotalScore(qd)
 	totalAnswered := app.GetQuizUserScore(qd, qrp)
 
@@ -76,7 +69,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var qr domain.QuizResults
+	var qr domain.QuizResult
 	qr.TestID = uuid
 	qr.ScoreID = qs.UUID
 	qr.PassTime = time.Now()
@@ -85,9 +78,18 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	qr.IsPassed = qs.Pass
 	qr.Replies = string(jQrp)
 
-	logger.Info(fmt.Sprintf("RESULTS: %2d/%2d (ratio %d%%)\n", totalAnswered, totalCorrrect, totalPercent))
-	logger.Info(fmt.Sprintf("RESULTS: %v\n", qr))
+	logger.Info(fmt.Sprintf("RESULTS: %2d/%2d (ratio %d%%)\n", totalAnswered, totalCorrrect, totalPercent)) //DEBUG
+	logger.Info(fmt.Sprintf("RESULTS: %v\n", qr.Replies))                                                   //DEBUG
 
-	http.Redirect(w, r, "/results/1", http.StatusSeeOther)
+	resultID, err := stor.WriteQuizResult(qr)
+	if err != nil || resultID == "" {
+		logger.Error(fmt.Sprintf("Quiz result write error [%s]: %s\n", uuid, err.Error()))
+		http.Error(w, fmt.Sprintf("Error. Quiz result write error [%s]", uuid), http.StatusInternalServerError)
+		return
+	}
+
+	urlID := domain.EncodeGUID(resultID)
+
+	http.Redirect(w, r, fmt.Sprintf("/results/%s", urlID), http.StatusSeeOther)
 
 }

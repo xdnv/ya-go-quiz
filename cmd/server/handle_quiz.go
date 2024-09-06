@@ -46,35 +46,6 @@ func quiz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// questions := []domain.QuizQuestion{
-	// 	{
-	// 		Text: "Выберите один правильный ответ (вариант №2)",
-	// 		Type: "single_choice",
-	// 		Options: []domain.QuizOption{
-	// 			{ID: "TST000001_001_01", Text: "Неправильный ответ №1"},
-	// 			{ID: "TST000001_001_02", Text: "Правильный ответ №2"},
-	// 			{ID: "TST000001_001_03", Text: "Неправильный ответ №3"},
-	// 		},
-	// 	},
-	// 	{
-	// 		Text: "Выберите все правильные ответы (варианты 2 и 4)",
-	// 		Type: "multiple_choice",
-	// 		Options: []domain.QuizOption{
-	// 			{ID: "TST000001_002_01", Text: "Неправильный ответ №1"},
-	// 			{ID: "TST000001_002_02", Text: "Правильный ответ №2"},
-	// 			{ID: "TST000001_002_03", Text: "Неправильный ответ №3"},
-	// 			{ID: "TST000001_002_04", Text: "Правильный ответ №4"},
-	// 		},
-	// 	},
-	// 	{
-	// 		Text: "Введите правильное значение (9)",
-	// 		Type: "entry_int",
-	// 		Options: []domain.QuizOption{
-	// 			{ID: "", Text: "(Введите число)"},
-	// 		},
-	// 	},
-	// }
-
 	data := domain.QuizPageData{
 		ID:          qd.ID,
 		UUID:        qd.UUID,

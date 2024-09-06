@@ -8,29 +8,44 @@ import (
 	"text/template"
 
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func handleResults(w http.ResponseWriter, r *http.Request) {
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 
-	data := domain.PageData{
-		Title:       "Результаты тестирования",
-		TableHeader: "Доступные тесты:",
-		Columns: []string{
-			"Описание",
-			"Тест",
-		},
-		Rows: []domain.QuizRowData{
-			{Name: "Тест 1", Value: "Отключить", Link: "#1"},
-			{Name: "Тест 2", Value: "Отключить", Link: "#2"},
-			{Name: "Тест 3", Value: "Отключить", Link: "#3"},
-		},
+	url := chi.URLParam(r, "id")
+	uuid, err := domain.DecodeGUID(url)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Wrong Result ID [%s]: %s\n", url, err.Error()))
+		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
+		return
 	}
 
-	//({{ if .IsCorrect }}Верно{{ else }}Неверно{{ end }})
+	if uuid == "" {
+		logger.Error(fmt.Sprintf("Malformed Result ID [%s]\n", url))
+		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
+		return
+	}
+
+	qr, err := stor.GetQuizResult(uuid)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Result extract error [%s]: %s\n", url, err.Error()))
+		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
+		return
+	}
+
+	data := domain.QuizResultPageData{
+		Title:  "Результаты тестирования",
+		Link:   "https://example.com/results/" + domain.EncodeGUID(qr.TestID),
+		Result: *qr,
+	}
+
+	//({{ if .IsPassed }}Верно{{ else }}Неверно{{ end }})
 
 	//TODO: move it and cache it!
 	// Read template

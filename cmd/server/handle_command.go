@@ -48,7 +48,6 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Печатаем данные в консоль
 	logger.Info(fmt.Sprintf("Got data: %s\n", body))
 
 	err = stor.ToggleQuizAvailability(uuid)

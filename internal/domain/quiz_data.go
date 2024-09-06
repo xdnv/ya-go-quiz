@@ -49,7 +49,7 @@ type QuizScore struct {
 }
 
 //Quiz results
-type QuizResults struct {
+type QuizResult struct {
 	ID       string    `db:"id" json:"id"`               // Unique result ID
 	TestID   string    `db:"test_id" json:"test_id"`     // Test ID
 	ScoreID  string    `db:"score_id" json:"score_id"`   // Score ID

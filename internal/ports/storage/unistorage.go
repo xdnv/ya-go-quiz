@@ -87,25 +87,24 @@ func (t UniStorage) Ping() error {
 	// }
 }
 
-func (t UniStorage) UpdateQuiz_(qd domain.QuizData) error {
-	// if t.config.StorageMode == app.Database {
+func (t UniStorage) WriteQuizResult(qr domain.QuizResult) (string, error) {
+
 	dbctx, cancel := context.WithTimeout(t.ctx, t.timeout)
 	defer cancel()
+	var result string
 
-	errMsg := "UniStorage.UpdateQuiz error"
+	errMsg := "UniStorage.WriteQuizResult error"
 	backoff := func(ctx context.Context) error {
-		err := t.db.UpdateQuiz_(dbctx, qd)
+		var err error
+		result, err = t.db.WriteQuizResult(dbctx, qr)
 		return app.HandleRetriableDB(err, errMsg)
 	}
 	err := app.DoRetry(dbctx, t.config.MaxConnectionRetries, backoff)
-	//err := t.db.SetMetric(dbctx, name, metric)
 	if err != nil {
 		logger.Error(fmt.Sprintf("%s: %s\n", errMsg, err))
 	}
-	// } else {
-	// 	t.stor.SetMetric(name, metric)
-	// }
-	return nil
+
+	return result, nil
 }
 
 func (t UniStorage) GetQuizRows(admin bool) (*[]domain.QuizRowData, error) {
@@ -166,6 +165,26 @@ func (t UniStorage) GetQuizScores(uuid string) (*[]domain.QuizScore, error) {
 		return nil, err
 	}
 	return qs, err
+}
+
+func (t UniStorage) GetQuizResult(uuid string) (*domain.QuizResult, error) {
+
+	dbctx, cancel := context.WithTimeout(t.ctx, t.timeout)
+	defer cancel()
+	var qr *domain.QuizResult
+
+	errMsg := "UniStorage.GetQuizResult error"
+	backoff := func(ctx context.Context) error {
+		var err error
+		qr, err = t.db.GetQuizResult(dbctx, uuid)
+		return app.HandleRetriableDB(err, errMsg)
+	}
+	err := app.DoRetry(dbctx, t.config.MaxConnectionRetries, backoff)
+	if err != nil {
+		logger.Error(fmt.Sprintf("%s: %s\n", errMsg, err))
+		return nil, err
+	}
+	return qr, err
 }
 
 // // Get a copy of Metric storage

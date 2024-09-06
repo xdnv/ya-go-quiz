@@ -30,7 +30,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 			HttpOnly: true,
 			//Secure:   true, Not possible while debugging
-			Expires: time.Now().Add(24 * time.Hour), // TTL 1 день
+			Expires: time.Now().Add(24 * time.Hour), // TTL 1 day
 		})
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return

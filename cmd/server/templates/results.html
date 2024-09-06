@@ -43,19 +43,23 @@
                     <tbody>
                         <tr>
                             <td>Дата завершения</td>
-                            <td>2024-09-01 23:59:59</td>
+                            <td>{{.Result.PassTime.Format "02 Jan 2006 15:04:00"}}</td>
                         </tr>
                         <tr>
                             <td>Процент успешных ответов</td>
-                            <td>60%</td>
+                            <td>{{.Result.Result}}%</td>
                         </tr>
                         <tr>
                             <td>Балл</td>
-                            <td>3</td>
+                            <td>{{.Result.Score}}</td>
                         </tr>
                         <tr>
                             <td>Результат</td>
+                            {{ if .Result.IsPassed }}
                             <td class="text-success">Сдано</td>
+                            {{ else }}
+                            <td class="text-danger">Не сдано</td>
+                            {{ end }}
                         </tr>                        
                     </tbody>
                 </table>
@@ -64,7 +68,7 @@
 
         <div class="text-center">
             <p>Постоянная ссылка на результат: <strong><a
-                        href="https://example.com/results/12345" id="permaLink">https://example.com/results/12345</a></strong></p>
+                        href="{{.Link}}" id="permaLink">{{.Link}}</a></strong></p>
         </div>
         <div class="text-center">
             <a href="#" onclick="copyToClipboard()" class="btn btn-primary">Скопировать ссылку</a>
