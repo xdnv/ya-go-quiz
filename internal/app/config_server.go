@@ -1,10 +1,13 @@
 package app
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 // defines main session storage type based on server config given
@@ -36,6 +39,9 @@ type ServerConfig struct {
 	LogLevel                 string
 	CompressibleContentTypes []string
 	MaxConnectionRetries     uint64
+	MockMode                 bool
+	Mock                     *sqlmock.Sqlmock
+	MockConn                 *sql.DB
 }
 
 func InitServerConfig() ServerConfig {
@@ -81,6 +87,8 @@ func InitServerConfig() ServerConfig {
 
 	//set main storage type for current session
 	cf.StorageMode = Database
+	//manually set to true in autotests
+	cf.MockMode = false
 
 	return cf
 }
