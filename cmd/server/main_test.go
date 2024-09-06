@@ -50,6 +50,16 @@ func NewTestServerConfig(db *sql.DB, mock *sqlmock.Sqlmock) *app.ServerConfig {
 	return &testSc
 }
 
+func SetAuthCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  "session",
+		Value: "authenticated",
+		//Path:  "/",
+		//Expires, HttpOnly
+	})
+	w.WriteHeader(http.StatusOK)
+}
+
 // init
 var _ = func() bool {
 	testing.Init()
@@ -386,6 +396,221 @@ func Test_handleResults(t *testing.T) {
 			require.NoError(t, err)
 
 			//bodyString := string(bodyBytes)
+			//assert.True(t, strings.Contains(bodyString, tt.want.bodyHeader))
+		})
+	}
+}
+
+func Test_handleCommand(t *testing.T) {
+	type want struct {
+		contentType string
+		statusCode  int
+		bodyHeader  string
+	}
+	tests := []struct {
+		name      string
+		request   string
+		parameter string
+		id        string
+		method    string
+		auth      bool
+		want      want
+	}{
+		{
+			name: "000 unauth command test (redirect)",
+			want: want{
+				contentType: "",
+				statusCode:  303,
+				bodyHeader:  "<html>",
+			},
+			request:   "/command/{command}/{id}",
+			parameter: "toggle",
+			id:        "qMp_rJ4dH97-mx9jdsmFkvP",
+			method:    http.MethodPost,
+			auth:      false,
+		},
+		{
+			name: "001 positive command test",
+			want: want{
+				contentType: "",
+				statusCode:  200,
+				bodyHeader:  "<html>",
+			},
+			request:   "/command/{command}/{id}",
+			parameter: "toggle",
+			id:        "qMp_rJ4dH97-mx9jdsmFkvP",
+			method:    http.MethodPost,
+			auth:      true,
+		},
+		// {
+		// 	name: "002 negative command test (wrong command)",
+		// 	want: want{
+		// 		contentType: "",
+		// 		statusCode:  http.StatusNotFound,
+		// 		bodyHeader:  "",
+		// 	},
+		// 	request:   "/command/{command}/{id}",
+		// 	parameter: "bla",
+		// 	id:        "qMp_rJ4dH97-mx9jdsmFkvP",
+		// 	method:    http.MethodPost,
+		// 	auth:      true,
+		// },
+	}
+
+	// create db mock with custom pgxNamedArgs converter
+	converter := PgxCustomConverter{}
+	db, mock, err := sqlmock.New(sqlmock.ValueConverterOption(converter))
+
+	if err != nil {
+		t.Fatalf("error opening sqlmock: '%s'", err)
+	}
+	defer db.Close()
+
+	//switch sever config to mock mode
+	testSc := NewTestServerConfig(db, &mock)
+	stor = storage.NewUniStorage(testSc)
+
+	//uuid := uuid.New()
+
+	// Expect query
+	mock.ExpectExec(`
+	UPDATE public.tests
+	SET is_active = NOT is_active
+	WHERE id = @id;
+`).
+		WithArgs(sqlmock.AnyArg())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(tt.method, tt.request, nil)
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("command", tt.parameter)
+			rctx.URLParams.Add("id", tt.id)
+
+			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+			if tt.auth {
+				SetAuthCookie(w, r)
+			}
+
+			handleCommand(w, r)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+
+			_, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
+
+			//bodyString := string(bodyBytes)
+			//t.Log(bodyString)
+			//assert.True(t, strings.Contains(bodyString, tt.want.bodyHeader))
+		})
+	}
+}
+
+func Test_adminPage(t *testing.T) {
+	type want struct {
+		contentType string
+		statusCode  int
+		bodyHeader  string
+	}
+	tests := []struct {
+		name      string
+		request   string
+		parameter string
+		id        string
+		method    string
+		auth      bool
+		want      want
+	}{
+		{
+			name: "000 unauth admin test (redirect)",
+			want: want{
+				contentType: "text/html; charset=utf-8",
+				statusCode:  303,
+				bodyHeader:  "<html>",
+			},
+			request:   "/admin",
+			parameter: "",
+			id:        "",
+			method:    http.MethodGet,
+			auth:      false,
+		},
+		{
+			name: "001 positive admin test",
+			want: want{
+				contentType: "",
+				statusCode:  200,
+				bodyHeader:  "<html>",
+			},
+			request:   "/admin",
+			parameter: "",
+			id:        "",
+			method:    http.MethodGet,
+			auth:      true,
+		},
+	}
+
+	// create db mock with custom pgxNamedArgs converter
+	converter := PgxCustomConverter{}
+	db, mock, err := sqlmock.New(sqlmock.ValueConverterOption(converter))
+
+	if err != nil {
+		t.Fatalf("error opening sqlmock: '%s'", err)
+	}
+	defer db.Close()
+
+	//switch sever config to mock mode
+	testSc := NewTestServerConfig(db, &mock)
+	stor = storage.NewUniStorage(testSc)
+
+	//uuid := uuid.New()
+
+	// Expect query
+	mock.ExpectQuery(`
+	SELECT id, ext_id, "version", is_active, "type", "name", description
+	FROM public.tests
+	WHERE is_active OR @adminMode;
+`).
+		WithArgs(sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "ext_id", "version", "is_active", "type", "name", "description"}).
+			AddRow(uuid.New(), "TST001", "20240901", true, "go-quiz-test", "Test DMO", "Test DESC"))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(tt.method, tt.request, nil)
+
+			//rctx := chi.NewRouteContext()
+			//rctx.URLParams.Add("command", tt.parameter)
+			//rctx.URLParams.Add("id", tt.id)
+
+			//r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+			if tt.auth {
+				SetAuthCookie(w, r)
+			}
+
+			handleCommand(w, r)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+
+			_, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
+
+			//bodyString := string(bodyBytes)
+			//t.Log(bodyString)
 			//assert.True(t, strings.Contains(bodyString, tt.want.bodyHeader))
 		})
 	}

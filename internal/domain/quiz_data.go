@@ -60,4 +60,5 @@ type QuizResult struct {
 	Replies  string    `db:"replies" json:"replies"` // Replies as JSON string
 }
 
+//Quiz reolies to serialize from http.Values
 type QuizReplies map[string][]string

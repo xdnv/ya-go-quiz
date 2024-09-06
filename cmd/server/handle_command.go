@@ -12,13 +12,22 @@ import (
 
 func handleCommand(w http.ResponseWriter, r *http.Request) {
 
+	logger.Info("hello")
+
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
+	logger.Info("hello2")
+
+	// set correct data type
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	//w.WriteHeader(http.StatusOK)
+
 	command := chi.URLParam(r, "command")
 	url := chi.URLParam(r, "id")
+	//logger.Info(fmt.Sprintf("Command: %s\n", command))
 
 	if command != "toggle" {
 		logger.Error(fmt.Sprintf("Wrong command: %s\n", command))
@@ -57,8 +66,4 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set correct data type
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//w.WriteHeader(http.StatusOK)
-	//return
 }
