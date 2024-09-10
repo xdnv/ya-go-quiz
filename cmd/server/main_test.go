@@ -127,7 +127,7 @@ func Test_index(t *testing.T) {
 
 			request := httptest.NewRequest(tt.method, tt.request, nil)
 			w := httptest.NewRecorder()
-			index(w, request)
+			handleIndex(w, request)
 
 			result := w.Result()
 
@@ -280,7 +280,7 @@ func Test_quiz(t *testing.T) {
 
 			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
-			quiz(w, r)
+			handleQuizPage(w, r)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -514,7 +514,7 @@ func Test_handleCommand(t *testing.T) {
 	}
 }
 
-func Test_adminPage(t *testing.T) {
+func Test_handleAdminPage(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
@@ -598,7 +598,7 @@ func Test_adminPage(t *testing.T) {
 				SetAuthCookie(w, r)
 			}
 
-			handleCommand(w, r)
+			handleAdminPage(w, r)
 			result := w.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)

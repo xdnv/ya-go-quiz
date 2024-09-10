@@ -7,10 +7,11 @@ import (
 	"internal/app"
 	"internal/domain"
 	"net/http"
+	"strings"
 	"time"
 )
 
-func submit(w http.ResponseWriter, r *http.Request) {
+func handleQuizSubmit(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	if err := r.ParseForm(); err != nil {
@@ -29,7 +30,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uuid := r.Form.Get("test_id")
-	if uuid == "" {
+	if strings.TrimSpace(uuid) == "" {
 		logger.Error(fmt.Sprintf("Submit: Wrong test ID [%s]\n", uuid))
 		http.Error(w, "Error. Unexpected quiz ID", http.StatusBadRequest)
 		return
@@ -82,7 +83,7 @@ func submit(w http.ResponseWriter, r *http.Request) {
 	logger.Info(fmt.Sprintf("RESULTS: %v\n", qr.Replies))                                                   //DEBUG
 
 	resultID, err := stor.WriteQuizResult(qr)
-	if err != nil || resultID == "" {
+	if err != nil || strings.TrimSpace(resultID) == "" {
 		logger.Error(fmt.Sprintf("Quiz result write error [%s]: %s\n", uuid, err.Error()))
 		http.Error(w, fmt.Sprintf("Error. Quiz result write error [%s]", uuid), http.StatusInternalServerError)
 		return

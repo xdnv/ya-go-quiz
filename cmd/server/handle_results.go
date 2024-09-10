@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"internal/adapters/logger"
 	"internal/domain"
+	"strings"
 	"text/template"
 
 	"net/http"
@@ -26,7 +27,7 @@ func handleResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if uuid == "" {
+	if strings.TrimSpace(uuid) == "" {
 		logger.Error(fmt.Sprintf("Malformed Result ID [%s]\n", url))
 		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
 		return

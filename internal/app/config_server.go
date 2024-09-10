@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -75,10 +76,10 @@ func InitServerConfig() ServerConfig {
 		cf.LogLevel = val
 	}
 
-	if cf.Endpoint == "" {
+	if strings.TrimSpace(cf.Endpoint) == "" {
 		panic("PANIC: endpoint address:port is not set")
 	}
-	if cf.LogLevel == "" {
+	if strings.TrimSpace(cf.LogLevel) == "" {
 		panic("PANIC: log level is not set")
 	}
 	if cf.MaxFileMemory == 0 {

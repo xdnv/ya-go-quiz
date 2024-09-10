@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"internal/domain"
 	"net/url"
+	"strings"
 )
 
 func GetReplies(rf url.Values) *domain.QuizReplies {
@@ -51,7 +52,7 @@ func GetQuizUserScore(qd *domain.QuizData, rf *domain.QuizReplies) int {
 			continue
 		}
 		result := (*rf)[q.UUID][0]
-		if result == "" {
+		if strings.TrimSpace(result) == "" {
 			continue
 		}
 		switch q.Type {

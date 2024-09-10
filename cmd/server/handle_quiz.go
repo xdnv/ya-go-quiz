@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"internal/adapters/logger"
@@ -13,7 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func quiz(w http.ResponseWriter, r *http.Request) {
+func handleQuizPage(w http.ResponseWriter, r *http.Request) {
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -27,7 +28,7 @@ func quiz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if uuid == "" {
+	if strings.TrimSpace(uuid) == "" {
 		logger.Error(fmt.Sprintf("Malformed Quiz ID [%s]\n", url))
 		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
 		return

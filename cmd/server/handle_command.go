@@ -6,20 +6,17 @@ import (
 	"internal/domain"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func handleCommand(w http.ResponseWriter, r *http.Request) {
 
-	logger.Info("hello")
-
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	logger.Info("hello2")
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -27,13 +24,8 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	command := chi.URLParam(r, "command")
 	url := chi.URLParam(r, "id")
-	//logger.Info(fmt.Sprintf("Command: %s\n", command))
 
-	if command != "toggle" {
-		logger.Error(fmt.Sprintf("Wrong command: %s\n", command))
-		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", command), http.StatusNotFound)
-		return
-	}
+	logger.Info(fmt.Sprintf("Command: %s, id: %s\n", command, url)) //DEBUG
 
 	uuid, err := domain.DecodeGUID(url)
 	if err != nil {
@@ -42,7 +34,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if uuid == "" {
+	if strings.TrimSpace(uuid) == "" {
 		logger.Error(fmt.Sprintf("Wrong Quiz ID [%s]\n", url))
 		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
 		return
@@ -57,13 +49,19 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	logger.Info(fmt.Sprintf("Got data: %s\n", body))
+	logger.Info(fmt.Sprintf("Body: %s\n", body))
 
-	err = stor.ToggleQuizAvailability(uuid)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Wrong Quiz ID [%s]: %s\n", url, err.Error()))
-		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
+	switch command {
+	case "toggle":
+		err = stor.ToggleQuizAvailability(uuid)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Wrong Quiz ID [%s]: %s\n", url, err.Error()))
+			http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", url), http.StatusNotFound)
+			return
+		}
+	default:
+		logger.Error(fmt.Sprintf("Unknown command: %s\n", command))
+		http.Error(w, fmt.Sprintf("Error. Resource not found: [%s]", command), http.StatusNotFound)
 		return
 	}
-
 }

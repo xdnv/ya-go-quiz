@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
+func handleIndex(w http.ResponseWriter, r *http.Request) {
 	//check for malformed requests - only exact root path accepted
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)

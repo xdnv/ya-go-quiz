@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func adminPage(w http.ResponseWriter, r *http.Request) {
+func handleAdminPage(w http.ResponseWriter, r *http.Request) {
 
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

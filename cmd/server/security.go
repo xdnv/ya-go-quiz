@@ -15,7 +15,7 @@ type BlockedUser struct {
 }
 
 var (
-	//simplified auth engine. Yes, it should be stored in database
+	//TODO: simplified auth engine. Yes, it should be stored in database
 	adminUser     = "admin"
 	adminPassword = "$2a$10$/w.tr1Hd1TCzBHkDC2nmCOfThwIQseOG/K/EEowuv44ii5XNDefUe" // "password" hash
 	blockedUsers  = make(map[string]BlockedUser)

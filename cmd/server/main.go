@@ -109,16 +109,16 @@ func server(ctx context.Context, wg *sync.WaitGroup) {
 	//mux.Use(signer.HandleSignedRequests)
 	mux.Use(middleware.Compress(5, sc.CompressibleContentTypes...))
 
-	mux.Get("/", index)
-	mux.Get("/admin", adminPage)
-	mux.Get("/quiz/{id}", quiz)
-	mux.Get("/login", authPage)
-	mux.Get("/logout", logout)
+	mux.Get("/", handleIndex)
+	mux.Get("/admin", handleAdminPage)
+	mux.Get("/quiz/{id}", handleQuizPage)
+	mux.Get("/login", handleAuthPage)
+	mux.Get("/logout", handleLogout)
 	mux.Get("/results/{id}", handleResults)
-	mux.Post("/login", auth)
-	mux.Post("/upload", uploadData)
+	mux.Post("/login", handleLogin)
+	mux.Post("/upload", handleDataUpload)
 	mux.Post("/command/{command}/{id}", handleCommand)
-	mux.Post("/submit", submit)
+	mux.Post("/submit", handleQuizSubmit)
 
 	// create a server
 	srv := &http.Server{Addr: sc.Endpoint, Handler: mux}

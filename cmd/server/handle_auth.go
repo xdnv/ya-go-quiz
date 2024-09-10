@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func auth(w http.ResponseWriter, r *http.Request) {
+func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	username := r.FormValue("username")
@@ -41,7 +41,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Неверный логин или пароль", http.StatusUnauthorized)
 }
 
-func authPage(w http.ResponseWriter, r *http.Request) {
+func handleAuthPage(w http.ResponseWriter, r *http.Request) {
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -110,7 +110,7 @@ func authPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func logout(w http.ResponseWriter, r *http.Request) {
+func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "session",
 		Value:  "",

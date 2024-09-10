@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func uploadData(w http.ResponseWriter, r *http.Request) {
+func handleDataUpload(w http.ResponseWriter, r *http.Request) {
 
 	if !isAuthenticated(r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -34,7 +34,7 @@ func uploadData(w http.ResponseWriter, r *http.Request) {
 	//Content-Type: application/json
 
 	ct := r.Header.Get("Content-Type")
-	if ct == "" {
+	if strings.TrimSpace(ct) == "" {
 		msg := "Content-Type header must be set"
 		http.Error(w, msg, http.StatusUnsupportedMediaType)
 		return
