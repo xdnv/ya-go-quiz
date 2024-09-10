@@ -1,10 +1,13 @@
 package app
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 // defines main session storage type based on server config given
@@ -30,18 +33,18 @@ func (t StorageType) String() string {
 
 type ServerConfig struct {
 	Endpoint                 string
-	StoreInterval            int64
+	MaxFileMemory            int64
 	StorageMode              StorageType
-	FileStoragePath          string
-	RestoreMetrics           bool
 	DatabaseDSN              string
 	LogLevel                 string
 	CompressibleContentTypes []string
 	MaxConnectionRetries     uint64
+	MockMode                 bool
+	Mock                     *sqlmock.Sqlmock
+	MockConn                 *sql.DB
 }
 
 func InitServerConfig() ServerConfig {
-	var MsgKey string
 
 	cf := ServerConfig{}
 
@@ -51,37 +54,22 @@ func InitServerConfig() ServerConfig {
 	}
 
 	flag.StringVar(&cf.Endpoint, "a", "localhost:8080", "the address:port endpoint for server to listen")
-	flag.Int64Var(&cf.StoreInterval, "i", 300, "interval in seconds to store metrics in datafile, set 0 for synchronous output")
+	flag.Int64Var(&cf.MaxFileMemory, "m", 1, "Max memory size in MB to process files uploaded")
 	flag.StringVar(&cf.DatabaseDSN, "d", "", "database DSN (format: 'host=<host> [port=port] user=<user> password=<xxxx> dbname=<mydb> sslmode=disable')")
-	flag.StringVar(&MsgKey, "k", "", "key to use signed messaging, empty value disables signing")
-	flag.StringVar(&cf.FileStoragePath, "f", "/tmp/metrics-db.json", "full datafile path to store/load state of metrics. empty value shuts off metric dumps")
-	flag.BoolVar(&cf.RestoreMetrics, "r", true, "load metrics from datafile on server start, boolean")
 	flag.StringVar(&cf.LogLevel, "l", "info", "log level")
 	flag.Parse()
 
 	if val, found := os.LookupEnv("ADDRESS"); found {
 		cf.Endpoint = val
 	}
-	if val, found := os.LookupEnv("STORE_INTERVAL"); found {
+	if val, found := os.LookupEnv("MAX_FILE_MEMORY"); found {
 		intval, err := strconv.ParseInt(val, 10, 64)
 		if err == nil {
-			cf.StoreInterval = intval
-		}
-	}
-	if val, found := os.LookupEnv("FILE_STORAGE_PATH"); found {
-		cf.FileStoragePath = val
-	}
-	if val, found := os.LookupEnv("RESTORE"); found {
-		boolval, err := strconv.ParseBool(val)
-		if err == nil {
-			cf.RestoreMetrics = boolval
+			cf.MaxFileMemory = intval
 		}
 	}
 	if val, found := os.LookupEnv("DATABASE_DSN"); found {
 		cf.DatabaseDSN = val
-	}
-	if val, found := os.LookupEnv("KEY"); found {
-		MsgKey = val
 	}
 	if val, found := os.LookupEnv("LOG_LEVEL"); found {
 		cf.LogLevel = val
@@ -93,18 +81,14 @@ func InitServerConfig() ServerConfig {
 	if cf.LogLevel == "" {
 		panic("PANIC: log level is not set")
 	}
-
-	//set main storage type for current session
-	if cf.DatabaseDSN != "" {
-		cf.StorageMode = Database
-	} else if cf.FileStoragePath != "" {
-		cf.StorageMode = File
-	} else {
-		cf.StorageMode = Memory
+	if cf.MaxFileMemory == 0 {
+		panic("PANIC: Max file memory cannot be zero")
 	}
 
-	////set signing mode
-	//signer.SetKey(MsgKey)
+	//set main storage type for current session
+	cf.StorageMode = Database
+	//manually set to true in autotests
+	cf.MockMode = false
 
 	return cf
 }

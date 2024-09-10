@@ -10,18 +10,18 @@ import (
 	"net/http"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
-	//check for malformed requests - only exact root path accepted
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+func adminPage(w http.ResponseWriter, r *http.Request) {
+
+	if !isAuthenticated(r) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	// set correct data type
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 
-	qr, err := stor.GetQuizRows(false)
+	qr, err := stor.GetQuizRows(true)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error getting quiz rows: %v\n", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -29,20 +29,24 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := domain.PageData{
-		Title:       "Прохождение тестирования",
+		Title:       "Панель администратора",
 		TableHeader: "Доступные тесты:",
 		Columns: []string{
+			"UUID",
+			"Идентификатор",
 			"Название",
 			"Описание",
 			"Тест",
+			"Активен",
+			"Управление",
 		},
 		Rows: *qr,
 	}
 
 	//TODO: move it and cache it!
 	// Read template
-	tmpl, err := template.ParseFiles("templates\\index.html")
-	logger.Info(fmt.Sprintf("ParseFiles => name is: %s %s\n", tmpl.Name(), tmpl.DefinedTemplates()))
+	tmpl, err := template.ParseFiles("templates\\admin.html")
+	logger.Info(fmt.Sprintf("ParseFiles => name is: %s %s", tmpl.Name(), tmpl.DefinedTemplates()))
 
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error loading template: %v\n", err))
